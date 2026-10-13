@@ -144,6 +144,7 @@ def build_id_map_from_readers(
     hidr: Hidr,
     *,
     exph: Exph | None = None,
+    pumping_related_codes: set[int] | None = None,
 ) -> NewaveIdMap:
     """Build the canonical :class:`NewaveIdMap` from already-parsed readers.
 
@@ -158,12 +159,17 @@ def build_id_map_from_readers(
     ``exph is None`` — the default, used by every path-only caller (``build_id_map``,
     the comparators) — enumeration is byte-identical to the in-service set: no ``NE``
     plant is admitted.
+
+    When *pumping_related_codes* is provided, those codes are excluded from the
+    fictitious classification — they are pumped-storage reservoirs.
     """
     # Hydro codes from confhd — existing plants minus the fictitious accounting
     # nodes (zero productivity sharing a generating plant's posto).
     confhd_df = confhd.usinas
     cadastro = hidr.cadastro
-    fict = fictitious_codes(confhd_df, cadastro)
+    fict = fictitious_codes(
+        confhd_df, cadastro, pumping_related_codes=pumping_related_codes
+    )
     if fict:
         rows = sorted(
             (
@@ -192,7 +198,10 @@ def build_id_map_from_readers(
             logger=_LOG,
         )
     hydro_codes = active_hydro_codes(
-        confhd_df, cadastro, exph_df=exph.expansoes if exph else None
+        confhd_df,
+        cadastro,
+        exph_df=exph.expansoes if exph else None,
+        pumping_related_codes=pumping_related_codes,
     )
 
     # Thermal codes from conft.

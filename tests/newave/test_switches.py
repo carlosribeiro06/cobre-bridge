@@ -18,6 +18,7 @@ from tests.conftest import make_nw_files
 
 _PLAIN = {
     "agrint": "agrupamento_livre",
+    "bombeamento": "estacoes_bombeamento",
     "c_adic": "considera_carga_adicional",
     "ghmin": "considera_ghmin",
     "re_dat": "restricoes_eletricas",
@@ -64,6 +65,14 @@ class TestFromDger:
         assert not off.on
         assert off.label == "DESCONSIDERA VAZMIN"
         assert off.value == 1
+
+    def test_bombeamento_switch_on_when_one_off_when_zero(self) -> None:
+        assert DgerSwitches.from_dger(_dger(estacoes_bombeamento=1)).bombeamento.on
+        assert not DgerSwitches.from_dger(_dger(estacoes_bombeamento=0)).bombeamento.on
+        assert DgerSwitches.from_dger(_dger()).bombeamento.on  # absent = on
+        switch = DgerSwitches.from_dger(_dger(estacoes_bombeamento=0)).bombeamento
+        assert switch.label == "ESTACOES BOMBEAMENTO"
+        assert switch.ignored == "pumping stations"
 
     @pytest.mark.parametrize(
         ("value", "max_on", "min_on"),

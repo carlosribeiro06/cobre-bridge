@@ -42,6 +42,7 @@ class Switch:
 @dataclass(frozen=True)
 class DgerSwitches:
     agrint: Switch
+    bombeamento: Switch
     c_adic: Switch
     ghmin: Switch
     re_dat: Switch
@@ -66,8 +67,16 @@ class DgerSwitches:
 
         turbining = read("restricao_turbinamento")
         drop_min_outflow = read("desconsidera_vazao_minima")
+        bombeamento_value = read("estacoes_bombeamento")
         return cls(
             agrint=plain("agrupamento_livre", "AGRUPAMENTO LIVRE", "agrint.dat"),
+            bombeamento=Switch(
+                "estacoes_bombeamento",
+                "ESTACOES BOMBEAMENTO",
+                bombeamento_value,
+                bombeamento_value is None or bombeamento_value != 0,
+                "pumping stations",
+            ),
             c_adic=plain(
                 "considera_carga_adicional", "CONS. CARGA ADICIONAL", "c_adic.dat"
             ),

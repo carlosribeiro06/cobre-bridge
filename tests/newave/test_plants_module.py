@@ -292,3 +292,53 @@ def test_active_hydros_admits_ee_at_declaration_position_without_exph() -> None:
     # ``build_id_map``, which passes exph=None) enumerates the pipeline's set.
     assert active_hydro_codes(_EE_CASE, _EE_CAD) == [10, 5, 7]
     assert list(active_hydros(_EE_CASE, _EE_CAD, None)["codigo_usina"]) == [10, 5, 7]
+
+
+# --- Pumping-related codes exclusion ----------------------------
+
+
+def test_pumping_related_codes_excludes_from_fictitious() -> None:
+    # Same setup as full-case twin test, but now 319 is a pumping-related code.
+    confhd = _confhd(
+        [
+            {
+                "codigo_usina": 57,
+                "nome_usina": "MAUA",
+                "posto": 57,
+                "usina_existente": "EX",
+            },
+            {
+                "codigo_usina": 319,
+                "nome_usina": "FICT.MAUA",
+                "posto": 57,
+                "usina_existente": "EX",
+            },
+        ]
+    )
+    cad = _cadastro({57: 0.009, 319: 0.0})
+    # Without pumping exclusion: 319 would be fictitious
+    assert fictitious_codes(confhd, cad) == {319}
+    # With pumping exclusion: 319 is preserved
+    assert fictitious_codes(confhd, cad, pumping_related_codes={319}) == set()
+    # And it appears in active_hydros
+    codes = active_hydro_codes(confhd, cad, pumping_related_codes={319})
+    assert 319 in codes
+    assert codes == [57, 319]
+
+
+def test_pumping_related_codes_only_affects_actual_fictitious() -> None:
+    # A pumping-related code that is NOT fictitious is unaffected.
+    confhd = _confhd(
+        [
+            {
+                "codigo_usina": 10,
+                "nome_usina": "GENERATOR",
+                "posto": 10,
+                "usina_existente": "EX",
+            },
+        ]
+    )
+    cad = _cadastro({10: 0.01})  # Has productivity, not fictitious
+    # Code 10 is not fictitious either way
+    assert fictitious_codes(confhd, cad) == set()
+    assert fictitious_codes(confhd, cad, pumping_related_codes={10}) == set()

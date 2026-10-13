@@ -125,6 +125,8 @@ class NewaveFiles:
     # FPHA libs files — fixed names, not listed in Arquivos (None when absent)
     polinjus: Path | None
     tratamento_fpha: Path | None
+    # Pumping station libs file (None when absent)
+    usinas_hidreletricas_csv: Path | None
 
     @classmethod
     def from_directory(cls, directory: Path) -> NewaveFiles:
@@ -200,6 +202,11 @@ class NewaveFiles:
             ("tratamento-fpha.csv", "tratamento_fpha.csv", "tratamento-fpha.dat"),
         )
 
+        # --- Step 4c: Pumping station libs file (fixed name, optional) ----------
+        usinas_hidreletricas_csv = _find_file_case_insensitive(
+            directory, "usinas-hidreletricas.csv"
+        )
+
         # --- Step 5: optional files from Arquivos ------------------------------
         def _opt(attr: str) -> Path | None:
             """Resolve an optional Arquivos attribute, returning None if absent."""
@@ -258,4 +265,5 @@ class NewaveFiles:
             adterm=adterm,
             polinjus=polinjus,
             tratamento_fpha=tratamento_fpha,
+            usinas_hidreletricas_csv=usinas_hidreletricas_csv,
         )

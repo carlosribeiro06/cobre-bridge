@@ -74,6 +74,7 @@ def _make_nw_files(
         adterm=None,
         polinjus=None,
         tratamento_fpha=None,
+        usinas_hidreletricas_csv=None,
     )
 
 

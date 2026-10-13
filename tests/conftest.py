@@ -186,6 +186,7 @@ _OPTIONAL = (
     "adterm",
     "polinjus",
     "tratamento_fpha",
+    "usinas_hidreletricas_csv",
 )
 
 

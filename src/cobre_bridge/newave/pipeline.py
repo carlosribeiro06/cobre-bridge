@@ -29,6 +29,7 @@ from cobre_bridge.newave.converters import hydro as hydro_conv
 from cobre_bridge.newave.converters import inflow_windows
 from cobre_bridge.newave.converters import initial_conditions as ic_conv
 from cobre_bridge.newave.converters import network as network_conv
+from cobre_bridge.newave.converters import pumping as pumping_conv
 from cobre_bridge.newave.converters import stochastic as stochastic_conv
 from cobre_bridge.newave.converters import tailrace as tailrace_conv
 from cobre_bridge.newave.converters import temporal as temporal_conv
@@ -267,6 +268,16 @@ def _convert_newave_case_impl(
     logger.debug("Converting hydros")
     hydros_dict = hydro_conv.convert_hydros(case, id_map)
 
+    logger.debug("Converting pumping stations")
+    pumping_dict, converted_pumping_ids = pumping_conv.convert_pumping_stations(
+        case, id_map
+    )
+
+    logger.debug("Converting pumping bounds")
+    pumping_bounds_table = pumping_conv.convert_pumping_bounds(
+        case, converted_pumping_ids
+    )
+
     logger.debug("Computing base hydro productivities")
     base_productivities = hydro_conv.compute_base_productivities(case, id_map)
 
@@ -435,6 +446,7 @@ def _convert_newave_case_impl(
     writer.write_json("system/buses.json", buses_dict)
     writer.write_json("system/lines.json", lines_dict)
     writer.write_json("system/non_controllable_sources.json", ncs_dict)
+    writer.write_json("system/pumping_stations.json", pumping_dict)
     writer.write_json("scenarios/load_factors.json", load_factors_dict)
     writer.write_json("scenarios/non_controllable_factors.json", ncs_factors_dict)
 
@@ -472,6 +484,10 @@ def _convert_newave_case_impl(
     # Optional tailrace curves (polinjus) — only written when the case ships them.
     if tailrace_table is not None and tailrace_table.num_rows > 0:
         writer.write_parquet("system/tailrace_curves.parquet", tailrace_table)
+
+    # Pumping bounds (min/max pumped flow) — only written when the case has them.
+    if pumping_bounds_table is not None and pumping_bounds_table.num_rows > 0:
+        writer.write_parquet("constraints/pumping_bounds.parquet", pumping_bounds_table)
 
     writer.write_parquet("scenarios/inflow_seasonal_stats.parquet", inflow_table)
 

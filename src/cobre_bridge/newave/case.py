@@ -211,6 +211,66 @@ class NewaveCase:
             return None
         return cast(UsinasHidreletricas, UsinasHidreletricas.read(str(path)))
 
+    @cached_property
+    def usinas_hidreletricas(self) -> UsinasHidreletricas | None:
+        """The LIBS pumping station data reader, or ``None`` if absent."""
+        path = self.files.usinas_hidreletricas_csv
+        if path is None:
+            return None
+        return cast(UsinasHidreletricas, UsinasHidreletricas.read(str(path)))
+
+    @cached_property
+    def pumping_stations(self) -> pd.DataFrame | None:
+        """Pumping station definitions from LIBS, or ``None`` if unavailable.
+
+        Returns the ``estacao_bombeamento()`` DataFrame when the ``bombeamento``
+        switch is on and the LIBS file is present; ``None`` otherwise.
+        """
+        if not self.switches.bombeamento.on:
+            return None
+        reader = self.usinas_hidreletricas
+        if reader is None:
+            return None
+        try:
+            df = reader.estacao_bombeamento(df=True)
+            if df is None or df.empty:
+                return None
+            return df
+        except (AttributeError, KeyError, TypeError):
+            return None
+
+    @cached_property
+    def pumping_related_codes(self) -> set[int]:
+        """Hydro codes referenced as source or destination by pumping stations.
+
+        Returns the union of ``codigo_usina_origem`` and ``codigo_usina_destino``
+        from the pumping stations table; empty set if no pumping data is available.
+        """
+        df = self.pumping_stations
+        if df is None:
+            return set()
+        codes: set[int] = set()
+        for col in ("codigo_usina_origem", "codigo_usina_destino"):
+            if col in df.columns:
+                codes.update(int(c) for c in df[col].dropna())
+        return codes
+
+    @cached_property
+    def pumping_station_submercados(self) -> pd.DataFrame | None:
+        """Submercado assignments for pumping stations, or ``None`` if unavailable."""
+        if not self.switches.bombeamento.on:
+            return None
+        reader = self.usinas_hidreletricas
+        if reader is None:
+            return None
+        try:
+            df = reader.estacao_bombeamento_submercado(df=True)
+            if df is None or df.empty:
+                return None
+            return df
+        except (AttributeError, KeyError, TypeError):
+            return None
+
     # --- Derived state ---------------------------------------------------------
 
     @property
@@ -254,6 +314,8 @@ class NewaveCase:
         plants; a direct ``plants`` caller without ``exph`` admits none). Recomputed
         per access (not cached) — it's a cheap filter and callers may hold their own
         view, so a shared cached DataFrame could alias.
+
+        Pumping-related hydro codes are excluded from fictitious classification.
         """
         from cobre_bridge.newave.plants import active_hydros
 
@@ -261,6 +323,7 @@ class NewaveCase:
             self.confhd.usinas,
             self.hidr.cadastro,
             self.exph.expansoes if self.exph is not None else None,
+            pumping_related_codes=self.pumping_related_codes,
         )
 
     @property
@@ -272,6 +335,7 @@ class NewaveCase:
             self.confhd.usinas,
             self.hidr.cadastro,
             self.exph.expansoes if self.exph is not None else None,
+            pumping_related_codes=self.pumping_related_codes,
         )
 
     @cached_property
@@ -287,6 +351,8 @@ class NewaveCase:
         dead-volume filling row is admitted at its confhd declaration position. The
         path-only ``build_id_map`` keeps the in-service-only enumeration
         (``exph=None``).
+
+        Pumping-related hydro codes are excluded from fictitious classification.
         """
         from cobre_bridge.newave.id_map import build_id_map_from_readers
 
@@ -297,4 +363,5 @@ class NewaveCase:
             self.ree,
             self.hidr,
             exph=self.exph,
+            pumping_related_codes=self.pumping_related_codes,
         )
