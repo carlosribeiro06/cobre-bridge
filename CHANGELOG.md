@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **NEWAVE hydros linked to pumping stations are no longer removed as
+  fictitious.** When the DGER bombeamento switch is enabled and
+  `usinas-hidreletricas.csv` is present, the converter now excludes
+  pumping-related hydro codes from the fictitious filter and writes
+  `pumping_stations.json` (station metadata and submercado links) and
+  `pumping_bounds.parquet` (stage-varying min/max bounds).
+
 ## [0.18.0] - 2026-10-07
 
 Pairs the bridge with the **cobre 0.18.0** release and pins `cobre-python` to
